@@ -4,7 +4,7 @@ namespace Modules\Invoices\Presentation\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class GetInvoiceRequest extends FormRequest
+class SendInvoiceRequest extends FormRequest
 {
     public function authorize(): bool
     {

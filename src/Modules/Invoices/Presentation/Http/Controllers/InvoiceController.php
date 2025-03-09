@@ -5,8 +5,12 @@ namespace Modules\Invoices\Presentation\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
+use Modules\Invoices\Domain\Enums\StatusEnum;
 use Modules\Invoices\Domain\Models\Invoice;
 use Modules\Invoices\Domain\Models\InvoiceProductLine;
+use Modules\Invoices\Domain\Services\InvoiceValidatorService;
+use Modules\Invoices\Domain\Validators\InvoiceContainsOnlyValidProductLinesValidator;
+use Modules\Invoices\Domain\Validators\InvoiceInDraftStatusValidator;
 use Modules\Invoices\Presentation\Http\Requests\AddInvoiceProductLineRequest;
 use Modules\Invoices\Presentation\Http\Requests\CreateInvoiceRequest;
 use Modules\Invoices\Presentation\Http\Requests\DeleteInvoiceProductLineRequest;
@@ -18,6 +22,11 @@ use Modules\Invoices\Presentation\Http\Requests\SendInvoiceRequest;
 
 class InvoiceController extends Controller
 {
+    public function __construct(private InvoiceValidatorService $invoiceValidatorService)
+    {
+        $this->invoiceValidatorService = $invoiceValidatorService;
+    }
+
     public function get(GetInvoiceRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -30,6 +39,9 @@ class InvoiceController extends Controller
     {
         $validated = $request->validated();
         $invoice = Invoice::create(array_merge(['id' => \Str::uuid()], $validated));
+
+        $this->invoiceValidatorService->validateOrFail([InvoiceInDraftStatusValidator::class], $invoice);
+
         $invoice->save();
         return response()->json($invoice, 201);
     }
@@ -38,6 +50,9 @@ class InvoiceController extends Controller
     {
         $validated = $request->validated();
         $invoice = Invoice::findOrFail($validated['id']);
+
+        $this->invoiceValidatorService->validateOrFail([InvoiceInDraftStatusValidator::class], $invoice);
+
         $invoice->update($validated);
 
         return response()->json($invoice);
@@ -48,9 +63,7 @@ class InvoiceController extends Controller
         $validated = $request->validated();
         $invoice = Invoice::findOrFail($validated['invoice_id']);
 
-        if ($invoice->status !== 'draft') {
-            return response()->json(['message' => 'error.not-allowed'], 400);
-        }
+        $this->invoiceValidatorService->validateOrFail([InvoiceInDraftStatusValidator::class], $invoice);
 
         $productLine = InvoiceProductLine::create(array_merge(['id' => \Str::uuid()], $validated));
         $invoice->productLines()->save($productLine);
@@ -63,9 +76,7 @@ class InvoiceController extends Controller
         $validated = $request->validated();
         $invoice = Invoice::findOrFail($validated['invoice_id']);
 
-        if ($invoice->status !== 'draft') {
-            return response()->json(['message' => 'error.not-allowed'], 400);
-        }
+        $this->invoiceValidatorService->validateOrFail([InvoiceInDraftStatusValidator::class], $invoice);
 
         $productLine = $invoice->productLines()->findOrFail($validated['id']);
         $productLine->delete();
@@ -75,13 +86,13 @@ class InvoiceController extends Controller
 
     public function send(SendInvoiceRequest $request, NotificationFacadeInterface $notificationFacade): JsonResponse
     {
-        \Log::info('SendInvoiceRequest', ['request' => $request->all()]);
         $validated = $request->validated();
         $invoice = Invoice::findOrFail($validated['id']);
 
-        if ($invoice->status !== 'draft') {
-            return response()->json(['message' => 'error.not-allowed'], 400);
-        }
+        $this->invoiceValidatorService->validateOrFail([
+            InvoiceInDraftStatusValidator::class,
+            InvoiceContainsOnlyValidProductLinesValidator::class
+        ], $invoice);
 
         $notificationFacade->notify(new NotifyData(
             resourceId: \Str::uuid(),
@@ -90,7 +101,7 @@ class InvoiceController extends Controller
             message: 'Your invoice has been sent.'
         ));
 
-        $invoice->status = 'sending';
+        $invoice->status = StatusEnum::Sending;
         $invoice->save();
 
         return response()->json($invoice);

@@ -4,23 +4,24 @@ declare(strict_types=1);
 
 namespace Modules\Invoices\Domain\Listeners;
 
+use Modules\Invoices\Domain\Enums\StatusEnum;
+use Modules\Invoices\Domain\Services\InvoiceValidatorService;
+use Modules\Invoices\Domain\Validators\InvoiceInSendingStatusValidator;
 use Modules\Notifications\Api\Events\ResourceDeliveredEvent;
 use Modules\Invoices\Domain\Models\Invoice;
-use Log;
 
 class UpdateInvoiceStatus
 {
+    public function __construct(private InvoiceValidatorService $invoiceValidatorService)
+    {
+    }
     public function handle(ResourceDeliveredEvent $event): void
     {
-        Log::info('UpdateInvoiceStatus listener triggered', ['resourceId' => $event->resourceId]);
+        $invoice = Invoice::findOrFail($event->resourceId);
 
-        $invoice = Invoice::where('id', $event->resourceId)->first();
+        $this->invoiceValidatorService->validateOrFail([InvoiceInSendingStatusValidator::class], $invoice);
 
-        if ($invoice && $invoice->status === 'sending') {
-            $invoice->status = 'sent-to-client';
-            $invoice->save();
-        } else {
-            Log::warning('Invoice not found or status not sending', ['resourceId' => $event->resourceId]);
-        }
+        $invoice->status = StatusEnum::SentToClient;
+        $invoice->save();
     }
 }

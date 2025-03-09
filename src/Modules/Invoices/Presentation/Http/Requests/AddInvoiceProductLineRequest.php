@@ -16,7 +16,7 @@ class AddInvoiceProductLineRequest extends FormRequest
         return [
             'invoice_id' => 'required|uuid|exists:invoices,id',
             'name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
         ];
     }

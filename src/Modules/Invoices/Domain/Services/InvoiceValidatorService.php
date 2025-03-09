@@ -12,7 +12,7 @@ use InvalidArgumentException;
 class InvoiceValidatorService
 {
     /**
-     * @param array $validatorClasses
+    * @param string[] $validatorClasses Array of validator class names as strings
      * @param Invoice $invoice
      * @return string[]
      */

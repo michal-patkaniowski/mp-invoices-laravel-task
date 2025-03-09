@@ -1,4 +1,4 @@
-# Laravel Task Solution
+# Michal Patkaniowski Laravel Invoice Task Solution
 
 ## Project Structure
 

@@ -22,9 +22,9 @@ class InvoiceContainsOnlyValidProductLinesValidator implements InvoiceValidatorI
     private function isValidProductLine(InvoiceProductLine $productLine): bool
     {
         return $productLine->quantity > 0
-            && $productLine->unitPrice > 0
+            && $productLine->price > 0
             && is_int($productLine->quantity)
-            && is_int($productLine->unitPrice);
+            && is_int($productLine->price);
     }
 
     public function getValidationError(): string

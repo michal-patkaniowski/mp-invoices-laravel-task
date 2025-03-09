@@ -9,6 +9,7 @@ use Modules\Invoices\Domain\Enums\StatusEnum;
 use Modules\Invoices\Domain\Models\Invoice;
 use Modules\Invoices\Domain\Models\InvoiceProductLine;
 use Modules\Invoices\Domain\Services\InvoiceValidatorService;
+use Modules\Invoices\Domain\Validators\InvoiceContainsAtLeastOneProductLineValidator;
 use Modules\Invoices\Domain\Validators\InvoiceContainsOnlyValidProductLinesValidator;
 use Modules\Invoices\Domain\Validators\InvoiceInDraftStatusValidator;
 use Modules\Invoices\Presentation\Http\Requests\AddInvoiceProductLineRequest;
@@ -91,6 +92,7 @@ class InvoiceController extends Controller
 
         $this->invoiceValidatorService->validateOrFail([
             InvoiceInDraftStatusValidator::class,
+            InvoiceContainsAtLeastOneProductLineValidator::class,
             InvoiceContainsOnlyValidProductLinesValidator::class
         ], $invoice);
 

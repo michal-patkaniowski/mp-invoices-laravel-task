@@ -19,9 +19,15 @@ class InvoiceProductLine extends Model
 
     public $incrementing = false;
     protected $keyType = 'uuid';
+    protected $appends = ['total_unit_price'];
 
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function getTotalUnitPriceAttribute(): float
+    {
+        return $this->quantity * $this->price;
     }
 }
